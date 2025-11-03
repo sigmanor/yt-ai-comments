@@ -22,6 +22,13 @@ function applyTheme() {
 // Apply dark theme before DOM is fully loaded
 document.documentElement.setAttribute('data-theme', 'dark');
 
+// Get default language based on browser settings
+function getDefaultLanguage() {
+  const supported = ['uk', 'en', 'pl', 'de', 'fr'];
+  const browserLang = navigator.language.substring(0, 2).toLowerCase();
+  return supported.includes(browserLang) ? browserLang : 'en';
+}
+
 // Get default model based on provider
 function getDefaultModel(provider) {
   if (provider === 'openai') {
@@ -35,9 +42,17 @@ function getDefaultModel(provider) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Update title with version
+  const manifest = chrome.runtime.getManifest();
+  const version = manifest.version;
+  const titleElement = document.querySelector('h1');
+  if (titleElement) {
+    titleElement.innerHTML = `YouTube AI Comments Generator <a href="https://github.com/Sigmanor/yt-ai-comments/blob/main/CHANGELOG.md" target="_blank">v${version}</a>`;
+  }
+
   // Default values
   const defaultOptions = {
-    language: 'en',
+    language: getDefaultLanguage(),
     provider: 'openai',
     apiKey: '',
     model: '',  // Will be set dynamically based on provider
