@@ -1,13 +1,20 @@
+// Get default language based on browser settings
+function getDefaultLanguage() {
+  const supported = ['uk', 'en', 'pl', 'de', 'fr'];
+  const browserLang = navigator.language.substring(0, 2).toLowerCase();
+  return supported.includes(browserLang) ? browserLang : 'en';
+}
+
 // Default values
 const defaultOptions = {
-  language: 'en',
+  language: getDefaultLanguage(),
   provider: 'openai',
   apiKey: '',
   model: '',  // Will be set dynamically based on provider
   maxTokens: 2000,
   temperature: 0.5,
   theme: 'dark', // Only dark theme is used
-  prompt: 'Write a positive comment to support the YouTube video creator. The comment should be friendly. No less than 10 words, no more than 20 words.'
+  prompt: '**Write a sincere and natural-sounding positive comment for a YouTube video. Use at least 10 words. Vary the structure and avoid overused phrases. Try to refer to something that could realistically appear in the video based on its title.**\n\n**Always end the comment with two new lines followed by this text (in English): (Created by YouTube AI Comments Generator)**'
 };
 
 // Get default model based on provider
@@ -85,10 +92,10 @@ function loadFromStorage(keys) {
   });
 }
 
-// Function to get color based on temperature (0 = cold/blue, 1 = hot/red)
+// Function to get color based on temperature (0 = cold/blue, 2 = hot/red)
 function getTemperatureColor(temperature) {
   // Convert temperature to a value between 0 and 1
-  const temp = parseFloat(temperature);
+  const temp = parseFloat(temperature) / 2;
   if (isNaN(temp)) return '#f2c53c'; // Default yellow if invalid
 
   // Create a gradient from blue (cold) to red (hot)
