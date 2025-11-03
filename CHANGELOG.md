@@ -1,3 +1,13 @@
+# [1.8.0](https://github.com/Sigmanor/yt-ai-comments/compare/v1.7.1...v1.8.0) (2025-11-03)
+
+
+### Features
+
+* **content:** add browser language detection and update default prompt ([cf4b18f](https://github.com/Sigmanor/yt-ai-comments/commit/cf4b18f7861eac5121472b133620479c64294243))
+* **options:** increase temperature range to allow more creativity ([bc1091e](https://github.com/Sigmanor/yt-ai-comments/commit/bc1091eb2fcdd97166df7562e92bb7105010755b))
+* **options:** update default language detection and prompt template ([203cfc3](https://github.com/Sigmanor/yt-ai-comments/commit/203cfc3dc911c9c447c70be5dc9eb0daca47113a))
+* **popup:** add browser language detection and update title with version link ([3bc617d](https://github.com/Sigmanor/yt-ai-comments/commit/3bc617dd133c2ee6779eccaf03f979b9b27c221d))
+
 ## [1.7.1](https://github.com/Sigmanor/yt-ai-comments/compare/v1.7.0...v1.7.1) (2025-08-18)
 
 
