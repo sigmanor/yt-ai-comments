@@ -413,15 +413,22 @@ function addGenerateButton() {
     // Get the video title
     const videoTitle = getVideoTitle();
 
+    // Get default language based on browser settings
+    function getDefaultLanguage() {
+      const supported = ['uk', 'en', 'pl', 'de', 'fr'];
+      const browserLang = navigator.language.substring(0, 2).toLowerCase();
+      return supported.includes(browserLang) ? browserLang : 'en';
+    }
+
     // Define default options
     const defaultOptions = {
-      language: 'en',
+      language: getDefaultLanguage(),
       provider: 'openai',
       apiKey: '',
       model: '',
       maxTokens: 2000,
       temperature: 0.5,
-      prompt: 'Write a positive comment to support the YouTube video creator. The comment should be friendly. No less than 10 words, no more than 20 words.'
+      prompt: '**Write a sincere and natural-sounding positive comment for a YouTube video. Use at least 10 words. Vary the structure and avoid overused phrases. Try to refer to something that could realistically appear in the video based on its title.**\n\n**Always end the comment with two new lines followed by this text (in English): (Created by YouTube AI Comments Generator)**'
     };
 
     // Function to get default model based on provider
