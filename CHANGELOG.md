@@ -1,3 +1,17 @@
+# [1.9.0](https://github.com/Sigmanor/yt-ai-comments/compare/v1.8.0...v1.9.0) (2026-05-16)
+
+
+### Bug Fixes
+
+* **ci:** repair release workflow token handling ([de4ea2f](https://github.com/Sigmanor/yt-ai-comments/commit/de4ea2faaa50901ff9fdcc02faf087d5297987f9))
+* **settings:** surface missing api key warnings ([ebc9285](https://github.com/Sigmanor/yt-ai-comments/commit/ebc9285e9e0075403c9b6161a956aefd6be44d58))
+
+
+### Features
+
+* **comments:** add selectable generated variants ([29be40a](https://github.com/Sigmanor/yt-ai-comments/commit/29be40aba6dc15dd7788592247ecc4e4ebb72ea3))
+* **options:** allow temperature values up to 2.0 ([67f11e3](https://github.com/Sigmanor/yt-ai-comments/commit/67f11e3df1c9bfe395a3a6017b7f6f982de78343))
+
 # [1.8.0](https://github.com/Sigmanor/yt-ai-comments/compare/v1.7.1...v1.8.0) (2025-11-03)
 
 
