@@ -12,6 +12,12 @@ const temperatureConfig = {
   default: 0.5
 };
 
+const variantCountConfig = {
+  min: 1,
+  max: 6,
+  default: 1
+};
+
 // Default values
 const defaultOptions = {
   language: getDefaultLanguage(),
@@ -19,6 +25,7 @@ const defaultOptions = {
   apiKey: '',
   model: '',  // Will be set dynamically based on provider
   maxTokens: 2000,
+  variantCount: variantCountConfig.default,
   temperature: temperatureConfig.default,
   theme: 'dark', // Only dark theme is used
   prompt: '**Write a sincere and natural-sounding positive comment for a YouTube video. Use at least 10 words. Vary the structure and avoid overused phrases. Try to refer to something that could realistically appear in the video based on its title.**\n\n**Always end the comment with two new lines followed by this text (in English): (Created by YouTube AI Comments Generator)**'
@@ -58,6 +65,20 @@ function normalizeTemperature(value) {
   }
 
   return temperature;
+}
+
+function normalizeVariantCount(value) {
+  const variantCount = parseInt(value, 10);
+
+  if (
+    isNaN(variantCount) ||
+    variantCount < variantCountConfig.min ||
+    variantCount > variantCountConfig.max
+  ) {
+    return variantCountConfig.default;
+  }
+
+  return variantCount;
 }
 
 function isMissingApiKey(apiKey) {
@@ -256,6 +277,12 @@ async function loadOptions() {
       document.getElementById('max-tokens').value = options.maxTokens || defaultOptions.maxTokens;
     }
 
+    // Set variant count
+    const variantCountSelect = document.getElementById('variant-count');
+    if (variantCountSelect) {
+      variantCountSelect.value = normalizeVariantCount(options.variantCount);
+    }
+
     // Set prompt value
     if (document.getElementById('prompt')) {
       document.getElementById('prompt').value = options.prompt || defaultOptions.prompt;
@@ -343,6 +370,12 @@ async function saveOptions() {
     const providerValue = providerSelect ? providerSelect.value : defaultOptions.provider;
     console.log('Getting provider value for saving:', providerValue);
 
+    const variantCountSelect = document.getElementById('variant-count');
+    const variantCount = normalizeVariantCount(variantCountSelect ? variantCountSelect.value : defaultOptions.variantCount);
+    if (variantCountSelect) {
+      variantCountSelect.value = variantCount;
+    }
+
     // Theme is always dark
     console.log('Using dark theme');
 
@@ -356,6 +389,7 @@ async function saveOptions() {
       apiKey: apiKey,
       model: model,
       maxTokens: maxTokens,
+      variantCount: variantCount,
       temperature: temperature,
       theme: 'dark', // Always dark theme
       prompt: document.getElementById('prompt').value
@@ -421,6 +455,11 @@ async function resetOptions() {
     // Reset max tokens
     if (document.getElementById('max-tokens')) {
       document.getElementById('max-tokens').value = defaultOptions.maxTokens;
+    }
+
+    // Reset variant count
+    if (document.getElementById('variant-count')) {
+      document.getElementById('variant-count').value = defaultOptions.variantCount;
     }
 
     // Reset temperature

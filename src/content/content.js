@@ -2,6 +2,27 @@
 let buttonAdded = false;
 let observer = null;
 let checkInterval = null;
+let commentVariantsEscHandler = null;
+
+const variantCountConfig = {
+  min: 1,
+  max: 6,
+  default: 1
+};
+
+function normalizeVariantCount(value) {
+  const variantCount = parseInt(value, 10);
+
+  if (
+    isNaN(variantCount) ||
+    variantCount < variantCountConfig.min ||
+    variantCount > variantCountConfig.max
+  ) {
+    return variantCountConfig.default;
+  }
+
+  return variantCount;
+}
 
 // Function to add the comment generation button
 function addGenerateButton() {
@@ -146,10 +167,7 @@ function addGenerateButton() {
     dropdownMenu.style.padding = '8px 0';
 
     // Theme detection
-    const isDarkTheme = document.documentElement.getAttribute('dark') !== null ||
-      document.body.classList.contains('dark') ||
-      (window.getComputedStyle(document.body).backgroundColor || '').includes('rgb(15, 15, 15)') ||
-      document.querySelector('html[dark]') !== null;
+    const isDarkTheme = detectYouTubeDarkTheme();
 
     if (isDarkTheme) {
       dropdownMenu.style.backgroundColor = '#282828';
@@ -414,6 +432,13 @@ function addGenerateButton() {
     return 'Unknown Video Title';
   }
 
+  function detectYouTubeDarkTheme() {
+    return document.documentElement.getAttribute('dark') !== null ||
+      document.body.classList.contains('dark') ||
+      (window.getComputedStyle(document.body).backgroundColor || '').includes('rgb(15, 15, 15)') ||
+      document.querySelector('html[dark]') !== null;
+  }
+
   function isMissingApiKey(apiKey) {
     return !apiKey || apiKey.trim() === '';
   }
@@ -478,6 +503,198 @@ function addGenerateButton() {
     message.style.display = 'block';
   }
 
+  function findCommentInput() {
+    let commentInput = document.querySelector('#contenteditable-root');
+
+    if (!commentInput) {
+      console.log('Could not find #contenteditable-root, trying alternative selectors...');
+      commentInput = document.querySelector('[contenteditable="true"][aria-label="Додайте коментар…"]');
+    }
+
+    if (!commentInput) {
+      console.log('Still could not find comment field, trying more selectors...');
+      commentInput = document.querySelector('[contenteditable="true"][aria-label="Add a comment…"]');
+    }
+
+    if (!commentInput) {
+      console.log('Trying to find any contenteditable element in the comment area...');
+      const commentArea = document.querySelector('ytd-comments ytd-comment-simplebox-renderer');
+      if (commentArea) {
+        commentInput = commentArea.querySelector('[contenteditable="true"]');
+      }
+    }
+
+    return commentInput;
+  }
+
+  function insertCommentIntoInput(comment) {
+    const commentInput = findCommentInput();
+
+    if (commentInput) {
+      commentInput.textContent = comment;
+      commentInput.dispatchEvent(new Event('input', { bubbles: true }));
+      commentInput.focus();
+      return true;
+    }
+
+    console.error('Could not find the comment input field');
+    alert('Could not find the comment input field. Please try clicking on the comment area first.');
+    return false;
+  }
+
+  function removeCommentVariantsModal() {
+    const existingModal = document.querySelector('.ai-comment-variants-modal-backdrop');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    if (commentVariantsEscHandler) {
+      document.removeEventListener('keydown', commentVariantsEscHandler);
+      commentVariantsEscHandler = null;
+    }
+  }
+
+  function showCommentVariantsModal(comments) {
+    removeCommentVariantsModal();
+
+    const isDarkTheme = detectYouTubeDarkTheme();
+    const backdrop = document.createElement('div');
+    backdrop.className = 'ai-comment-variants-modal-backdrop';
+    backdrop.style.position = 'fixed';
+    backdrop.style.inset = '0';
+    backdrop.style.display = 'flex';
+    backdrop.style.alignItems = 'center';
+    backdrop.style.justifyContent = 'center';
+    backdrop.style.padding = '20px';
+    backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.55)';
+    backdrop.style.zIndex = '2147483647';
+
+    const modal = document.createElement('div');
+    modal.className = 'ai-comment-variants-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.style.width = 'min(920px, calc(100vw - 32px))';
+    modal.style.maxHeight = '82vh';
+    modal.style.display = 'flex';
+    modal.style.flexDirection = 'column';
+    modal.style.overflow = 'hidden';
+    modal.style.borderRadius = '12px';
+    modal.style.boxShadow = '0 18px 60px rgba(0, 0, 0, 0.35)';
+    modal.style.backgroundColor = isDarkTheme ? '#212121' : '#ffffff';
+    modal.style.border = isDarkTheme ? '1px solid #3f3f3f' : '1px solid #d5d5d5';
+    modal.style.color = isDarkTheme ? '#ffffff' : '#0f0f0f';
+
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.alignItems = 'center';
+    header.style.justifyContent = 'space-between';
+    header.style.gap = '12px';
+    header.style.padding = '14px 16px';
+    header.style.borderBottom = isDarkTheme ? '1px solid #3f3f3f' : '1px solid #e5e5e5';
+
+    const title = document.createElement('div');
+    title.textContent = 'Choose a comment';
+    title.style.fontSize = '16px';
+    title.style.fontWeight = '600';
+
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.textContent = '×';
+    closeButton.setAttribute('aria-label', 'Close');
+    closeButton.style.width = '32px';
+    closeButton.style.height = '32px';
+    closeButton.style.display = 'inline-flex';
+    closeButton.style.alignItems = 'center';
+    closeButton.style.justifyContent = 'center';
+    closeButton.style.border = 'none';
+    closeButton.style.borderRadius = '50%';
+    closeButton.style.backgroundColor = isDarkTheme ? '#303030' : '#f1f1f1';
+    closeButton.style.color = isDarkTheme ? '#ffffff' : '#0f0f0f';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.fontSize = '22px';
+    closeButton.style.lineHeight = '1';
+    closeButton.addEventListener('click', removeCommentVariantsModal);
+
+    const list = document.createElement('div');
+    list.style.display = 'grid';
+    list.style.gridTemplateColumns = 'repeat(auto-fit, minmax(280px, 1fr))';
+    list.style.alignItems = 'stretch';
+    list.style.gap = '10px';
+    list.style.padding = '14px 16px 16px';
+    list.style.overflowY = 'auto';
+
+    comments.forEach((comment, index) => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.style.width = '100%';
+      card.style.minWidth = '0';
+      card.style.height = '100%';
+      card.style.padding = '12px';
+      card.style.textAlign = 'left';
+      card.style.borderRadius = '8px';
+      card.style.border = isDarkTheme ? '1px solid #454545' : '1px solid #dddddd';
+      card.style.backgroundColor = isDarkTheme ? '#2b2b2b' : '#f8f8f8';
+      card.style.color = isDarkTheme ? '#ffffff' : '#0f0f0f';
+      card.style.cursor = 'pointer';
+      card.style.font = 'inherit';
+      card.style.transition = 'border-color 0.15s, background-color 0.15s';
+
+      const label = document.createElement('div');
+      label.textContent = `Option ${index + 1}`;
+      label.style.marginBottom = '6px';
+      label.style.fontSize = '12px';
+      label.style.fontWeight = '600';
+      label.style.color = isDarkTheme ? '#aaa' : '#606060';
+
+      const text = document.createElement('div');
+      text.textContent = comment;
+      text.style.whiteSpace = 'pre-wrap';
+      text.style.fontSize = '14px';
+      text.style.lineHeight = '1.45';
+
+      card.appendChild(label);
+      card.appendChild(text);
+
+      card.addEventListener('mouseenter', () => {
+        card.style.borderColor = '#3ea6ff';
+        card.style.backgroundColor = isDarkTheme ? '#333333' : '#ffffff';
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.borderColor = isDarkTheme ? '#454545' : '#dddddd';
+        card.style.backgroundColor = isDarkTheme ? '#2b2b2b' : '#f8f8f8';
+      });
+      card.addEventListener('click', () => {
+        if (insertCommentIntoInput(comment)) {
+          removeCommentVariantsModal();
+        }
+      });
+
+      list.appendChild(card);
+    });
+
+    header.appendChild(title);
+    header.appendChild(closeButton);
+    modal.appendChild(header);
+    modal.appendChild(list);
+    backdrop.appendChild(modal);
+
+    backdrop.addEventListener('click', (event) => {
+      if (event.target === backdrop) {
+        removeCommentVariantsModal();
+      }
+    });
+
+    commentVariantsEscHandler = (event) => {
+      if (event.key === 'Escape') {
+        removeCommentVariantsModal();
+      }
+    };
+    document.addEventListener('keydown', commentVariantsEscHandler);
+
+    document.body.appendChild(backdrop);
+    closeButton.focus();
+  }
+
   // Function to generate a comment
   function generateComment(mood, selectedLanguage, dropdownMenu) {
     const button = document.querySelector('.ai-comment-generator-btn');
@@ -503,6 +720,7 @@ function addGenerateButton() {
       apiKey: '',
       model: '',
       maxTokens: 2000,
+      variantCount: 1,
       temperature: 0.5,
       prompt: '**Write a sincere and natural-sounding positive comment for a YouTube video. Use at least 10 words. Vary the structure and avoid overused phrases. Try to refer to something that could realistically appear in the video based on its title.**\n\n**Always end the comment with two new lines followed by this text (in English): (Created by YouTube AI Comments Generator)**'
     };
@@ -545,6 +763,8 @@ function addGenerateButton() {
           options.maxTokens = 2000;
         }
 
+        options.variantCount = normalizeVariantCount(options.variantCount);
+
         if (options.temperature === undefined) {
           options.temperature = 0.5;
         }
@@ -580,36 +800,16 @@ function addGenerateButton() {
             }
 
             if (response && response.success) {
-              // Try multiple selectors to find the comment input field
-              let commentInput = document.querySelector('#contenteditable-root');
+              const comments = Array.isArray(response.comments) && response.comments.length > 0
+                ? response.comments
+                : [response.comment].filter(Boolean);
 
-              if (!commentInput) {
-                console.log('Could not find #contenteditable-root, trying alternative selectors...');
-                commentInput = document.querySelector('[contenteditable="true"][aria-label="Додайте коментар…"]');
-              }
-
-              if (!commentInput) {
-                console.log('Still could not find comment field, trying more selectors...');
-                commentInput = document.querySelector('[contenteditable="true"][aria-label="Add a comment…"]');
-              }
-
-              if (!commentInput) {
-                console.log('Trying to find any contenteditable element in the comment area...');
-                const commentArea = document.querySelector('ytd-comments ytd-comment-simplebox-renderer');
-                if (commentArea) {
-                  commentInput = commentArea.querySelector('[contenteditable="true"]');
-                }
-              }
-
-              if (commentInput) {
-                commentInput.textContent = response.comment;
-                commentInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-                // Focus on the input field
-                commentInput.focus();
+              if (options.variantCount > 1 && comments.length > 0) {
+                showCommentVariantsModal(comments);
+              } else if (comments.length > 0) {
+                insertCommentIntoInput(comments[0]);
               } else {
-                console.error('Could not find the comment input field');
-                alert('Could not find the comment input field. Please try clicking on the comment area first.');
+                alert('Error: Failed to generate comment');
               }
             } else {
               alert(`Error: ${response?.error || 'Failed to generate comment'}`);
@@ -630,6 +830,7 @@ function addGenerateButton() {
   // Function to clear previous listeners
   function clearPreviousListeners() {
     buttonAdded = false;
+    removeCommentVariantsModal();
 
     // Clear previous interval
     if (checkInterval) {

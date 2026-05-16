@@ -19,7 +19,8 @@
     select:focus,
     #api-key:focus,
     #model:focus,
-    #max-tokens:focus {
+    #max-tokens:focus,
+    #variant-count:focus {
       outline: none !important;
       border-color: #556fa2d9 !important;
       box-shadow: 0 0 3px rgba(85, 111, 162, 0.3) !important;
@@ -48,9 +49,11 @@
     html[data-theme="dark"] #api-key,
     html[data-theme="dark"] #model,
     html[data-theme="dark"] #max-tokens,
+    html[data-theme="dark"] #variant-count,
     [data-theme="dark"] #api-key,
     [data-theme="dark"] #model,
-    [data-theme="dark"] #max-tokens {
+    [data-theme="dark"] #max-tokens,
+    [data-theme="dark"] #variant-count {
       border: 1px solid var(--border-color) !important;
       box-shadow: 0 1px 3px var(--shadow-color) !important;
       background-color: var(--input-bg) !important;
@@ -168,6 +171,19 @@
       <input type="number" id="max-tokens" min="1" max="4096" placeholder="Enter max tokens"
         style="width: 100%; box-sizing: border-box;">
       <div class="model-info">Default: 2000</div>
+    </div>
+
+    <div class="option-group">
+      <label for="variant-count">Comment Variants:</label>
+      <select id="variant-count" style="width: 100%; box-sizing: border-box; cursor: pointer;">
+        <option value="1">1 variant</option>
+        <option value="2">2 variants</option>
+        <option value="3">3 variants</option>
+        <option value="4">4 variants</option>
+        <option value="5">5 variants</option>
+        <option value="6">6 variants</option>
+      </select>
+      <div class="model-info">Default: 1. Choose up to 6 options to compare before inserting a comment.</div>
     </div>
 
     <div class="option-group">

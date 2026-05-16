@@ -104,9 +104,11 @@ html[data-theme="dark"] .option-group input[type="password"] {
 [data-theme="dark"] #api-key,
 [data-theme="dark"] #model,
 [data-theme="dark"] #max-tokens,
+[data-theme="dark"] #variant-count,
 html[data-theme="dark"] #api-key,
 html[data-theme="dark"] #model,
-html[data-theme="dark"] #max-tokens {
+html[data-theme="dark"] #max-tokens,
+html[data-theme="dark"] #variant-count {
   border: 1px solid var(--border-color) !important;
   background-color: var(--input-bg) !important;
   box-shadow: 0 1px 3px var(--shadow-color) !important;
@@ -118,7 +120,8 @@ textarea:focus,
 select:focus,
 #api-key:focus,
 #model:focus,
-#max-tokens:focus {
+#max-tokens:focus,
+#variant-count:focus {
   outline: none;
   border-color: #556fa2d9 !important;
   box-shadow: 0 0 3px rgba(85, 111, 162, 0.3) !important;
