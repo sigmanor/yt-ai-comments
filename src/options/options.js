@@ -5,6 +5,13 @@ function getDefaultLanguage() {
   return supported.includes(browserLang) ? browserLang : 'en';
 }
 
+const temperatureConfig = {
+  min: 0,
+  max: 2,
+  step: 0.1,
+  default: 0.5
+};
+
 // Default values
 const defaultOptions = {
   language: getDefaultLanguage(),
@@ -12,7 +19,7 @@ const defaultOptions = {
   apiKey: '',
   model: '',  // Will be set dynamically based on provider
   maxTokens: 2000,
-  temperature: 0.5,
+  temperature: temperatureConfig.default,
   theme: 'dark', // Only dark theme is used
   prompt: '**Write a sincere and natural-sounding positive comment for a YouTube video. Use at least 10 words. Vary the structure and avoid overused phrases. Try to refer to something that could realistically appear in the video based on its title.**\n\n**Always end the comment with two new lines followed by this text (in English): (Created by YouTube AI Comments Generator)**'
 };
@@ -27,6 +34,28 @@ function getDefaultModel(provider) {
     return 'openai/gpt-4.1-nano';
   }
   return 'gpt-4o-mini'; // Default to OpenAI if provider is unknown
+}
+
+function applyTemperatureSliderConfig(temperatureSlider) {
+  if (!temperatureSlider) return;
+
+  temperatureSlider.min = String(temperatureConfig.min);
+  temperatureSlider.max = String(temperatureConfig.max);
+  temperatureSlider.step = String(temperatureConfig.step);
+}
+
+function normalizeTemperature(value) {
+  const temperature = parseFloat(value);
+
+  if (
+    isNaN(temperature) ||
+    temperature < temperatureConfig.min ||
+    temperature > temperatureConfig.max
+  ) {
+    return temperatureConfig.default;
+  }
+
+  return temperature;
 }
 
 // Simple function to save settings to chrome.storage.sync
@@ -95,7 +124,9 @@ function loadFromStorage(keys) {
 // Function to get color based on temperature (0 = cold/blue, 2 = hot/red)
 function getTemperatureColor(temperature) {
   // Convert temperature to a value between 0 and 1
-  const temp = parseFloat(temperature) / 2;
+  const temp = (
+    parseFloat(temperature) - temperatureConfig.min
+  ) / (temperatureConfig.max - temperatureConfig.min);
   if (isNaN(temp)) return '#f2c53c'; // Default yellow if invalid
 
   // Create a gradient from blue (cold) to red (hot)
@@ -213,8 +244,10 @@ async function loadOptions() {
     const temperatureValue = document.getElementById('temperature-value');
 
     if (temperatureSlider && temperatureValue) {
+      applyTemperatureSliderConfig(temperatureSlider);
+
       // Set initial value
-      const tempValue = options.temperature !== undefined ? options.temperature : defaultOptions.temperature;
+      const tempValue = normalizeTemperature(options.temperature);
       temperatureSlider.value = tempValue;
 
       // Update temperature display with color
@@ -265,9 +298,11 @@ async function saveOptions() {
 
     // Get temperature value and ensure it's a number
     const temperatureInput = document.getElementById('temperature');
-    let temperature = parseFloat(temperatureInput.value);
-    if (isNaN(temperature) || temperature < 0 || temperature > 1) {
-      temperature = defaultOptions.temperature;
+    applyTemperatureSliderConfig(temperatureInput);
+
+    const rawTemperature = parseFloat(temperatureInput.value);
+    let temperature = normalizeTemperature(temperatureInput.value);
+    if (temperature !== rawTemperature) {
       temperatureInput.value = temperature;
       // Update temperature display with color
       updateTemperatureDisplay(temperature);
@@ -365,6 +400,7 @@ async function resetOptions() {
     const temperatureSlider = document.getElementById('temperature');
 
     if (temperatureSlider) {
+      applyTemperatureSliderConfig(temperatureSlider);
       temperatureSlider.value = defaultOptions.temperature;
       // Update temperature display with color
       updateTemperatureDisplay(defaultOptions.temperature);
@@ -486,6 +522,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Add event listener to temperature slider
     const temperatureSlider = document.getElementById('temperature');
     if (temperatureSlider) {
+      applyTemperatureSliderConfig(temperatureSlider);
+
       temperatureSlider.addEventListener('input', function() {
         // Update temperature display with color
         updateTemperatureDisplay(this.value);
