@@ -13,7 +13,7 @@ YouTube AI Comments Generator is a browser extension that helps you craft engagi
 
 </div>
 
-## 🌟 Features
+## Features
 
 - **AI-Powered Comment Generation**: Utilize OpenAI, MistralAI, or OpenRouter to create engaging comments
 - **Multiple Language Support**: Generate comments in Ukrainian, English, Polish, German, and French
@@ -24,7 +24,7 @@ YouTube AI Comments Generator is a browser extension that helps you craft engagi
 - **Comment Mood Selection**: Choose different moods for your comments (positive, neutral, critical)
 - **Quick Language Switching**: Change comment language directly from the dropdown menu
 
-## 📸 Screenshots
+## Screenshots
 
 <details>
 <summary style="cursor: pointer;">Click to expand</summary>
@@ -39,12 +39,12 @@ YouTube AI Comments Generator is a browser extension that helps you craft engagi
 
 </details>
 
-## 📋 Requirements
+## Requirements
 
 - Chrome (version 88+) or Firefox (version 109+)
 - OpenAI, MistralAI, or OpenRouter API key
 
-## 🔧 Installation
+## Installation
 
 ### Chrome Web Store
 
@@ -88,7 +88,7 @@ YouTube AI Comments Generator is a browser extension that helps you craft engagi
 5. Click "Load Temporary Add-on"
 6. Select the `manifest.json` file in the `src` folder
 
-## 🚀 Usage
+## Usage
 
 1. **Set Up the Extension**:
 
@@ -107,7 +107,7 @@ YouTube AI Comments Generator is a browser extension that helps you craft engagi
    - Edit the generated comment if needed
    - Post your comment using YouTube's "Comment" button
 
-## ⚙️ Configuration Options
+## Configuration Options
 
 | Setting              | Description                            | Default                                                                                                                                      |
 | -------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -120,7 +120,7 @@ YouTube AI Comments Generator is a browser extension that helps you craft engagi
 | **Temperature**      | Creativity level (0.0-2.0)             | 0.5                                                                                                                                          |
 | **Prompt**           | Template for comment generation        | Write a positive comment to support the YouTube video creator. The comment should be friendly. No less than 10 words, no more than 20 words. |
 
-## 🔑 Getting API Keys
+## Getting API Keys
 
 ### OpenAI API Key
 
@@ -146,7 +146,7 @@ YouTube AI Comments Generator is a browser extension that helps you craft engagi
 4. Create a new API key
 5. Copy and paste it into the extension settings
 
-## 🛠️ Development
+## Development
 
 ### Project Structure
 
@@ -194,11 +194,11 @@ YouTube AI Comments Generator is a browser extension that helps you craft engagi
    npm run build:firefox
    ```
 
-## 📝 License
+## License
 
 This project is licensed under the Mozilla Public License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Credits
+## Credits
 
 - Icons used in this extension are created by [Kawalanicon](https://www.flaticon.com/authors/kawalanicon) from Flaticon
-- Built with ❤️ for the YouTube community
+- Built for the YouTube community
