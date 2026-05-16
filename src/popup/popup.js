@@ -41,6 +41,27 @@ function getDefaultModel(provider) {
   return 'gpt-4o-mini'; // Default to OpenAI if provider is unknown
 }
 
+const missingApiKeyMessage = 'Add an API key before generating comments. Empty keys are saved if you clear this field.';
+
+function isMissingApiKey(apiKey) {
+  return !apiKey || apiKey.trim() === '';
+}
+
+function updateApiKeyWarning(apiKey) {
+  const apiKeyInput = document.getElementById('api-key');
+  const warning = document.getElementById('api-key-warning');
+  const shouldWarn = isMissingApiKey(apiKey);
+
+  if (apiKeyInput) {
+    apiKeyInput.classList.toggle('settings-field-warning', shouldWarn);
+  }
+
+  if (warning) {
+    warning.textContent = shouldWarn ? missingApiKeyMessage : '';
+    warning.classList.toggle('is-visible', shouldWarn);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // Update title with version
   const manifest = chrome.runtime.getManifest();
@@ -79,6 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const apiKeyInput = document.getElementById('api-key');
     if (apiKeyInput) {
       apiKeyInput.value = options.apiKey || '';
+      updateApiKeyWarning(options.apiKey || '');
     }
 
     // Set model with default if empty
@@ -135,6 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
       apiKeyInput.addEventListener(eventType, function () {
         const apiKey = this.value;
         console.log('API key changed (length):', apiKey.length);
+        updateApiKeyWarning(apiKey);
 
         // Save the API key change
         chrome.storage.sync.set({ apiKey: apiKey }, () => {

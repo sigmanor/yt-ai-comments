@@ -282,6 +282,20 @@ function addGenerateButton() {
     generateBtn.style.fontSize = '12px';
     generateBtn.style.transition = 'background-color 0.2s';
 
+    const generationMessage = document.createElement('div');
+    generationMessage.className = 'ai-comment-generation-message';
+    generationMessage.setAttribute('role', 'status');
+    generationMessage.setAttribute('aria-live', 'polite');
+    generationMessage.style.display = 'none';
+    generationMessage.style.margin = '8px 8px 0';
+    generationMessage.style.padding = '8px';
+    generationMessage.style.borderRadius = '3px';
+    generationMessage.style.fontSize = '12px';
+    generationMessage.style.lineHeight = '1.35';
+    generationMessage.style.backgroundColor = isDarkTheme ? '#3e2222' : '#fff0f0';
+    generationMessage.style.border = isDarkTheme ? '1px solid #8a3737' : '1px solid #f0b5b5';
+    generationMessage.style.color = isDarkTheme ? '#ffb3b3' : '#8a1f1f';
+
     generateBtn.addEventListener('mouseenter', () => {
       generateBtn.style.backgroundColor = '#1565c0';
     });
@@ -296,13 +310,13 @@ function addGenerateButton() {
       // Save the current mood selection
       chrome.storage.sync.set({ savedMood: mood }, function () { });
 
-      dropdownMenu.style.display = 'none';
-      generateComment(mood, language);
+      generateComment(mood, language, dropdownMenu);
     });
 
     // Assemble dropdown menu
     dropdownMenu.appendChild(moodSection);
     dropdownMenu.appendChild(langSection);
+    dropdownMenu.appendChild(generationMessage);
     dropdownMenu.appendChild(generateBtn);
 
     // Toggle dropdown on main button click
@@ -400,15 +414,77 @@ function addGenerateButton() {
     return 'Unknown Video Title';
   }
 
+  function isMissingApiKey(apiKey) {
+    return !apiKey || apiKey.trim() === '';
+  }
+
+  function clearGenerationMessage() {
+    const message = document.querySelector('.ai-comment-generation-message');
+    if (!message) return;
+
+    message.style.display = 'none';
+    message.textContent = '';
+  }
+
+  function openExtensionSettings() {
+    const optionsUrl = chrome.runtime.getURL('options/options.html');
+
+    try {
+      if (chrome.runtime.openOptionsPage) {
+        chrome.runtime.openOptionsPage(() => {
+          if (chrome.runtime.lastError) {
+            window.open(optionsUrl, '_blank', 'noopener');
+          }
+        });
+        return;
+      }
+    } catch (error) {
+      console.warn('Could not open options page via runtime API:', error);
+    }
+
+    window.open(optionsUrl, '_blank', 'noopener');
+  }
+
+  function showGenerationMessage(messageText, options = {}) {
+    const message = document.querySelector('.ai-comment-generation-message');
+    if (!message) return;
+
+    message.textContent = '';
+
+    const text = document.createElement('div');
+    text.textContent = messageText;
+    message.appendChild(text);
+
+    if (options.showSettingsAction) {
+      const settingsButton = document.createElement('button');
+      settingsButton.type = 'button';
+      settingsButton.textContent = 'Open Settings';
+      settingsButton.style.marginTop = '6px';
+      settingsButton.style.padding = '5px 8px';
+      settingsButton.style.border = 'none';
+      settingsButton.style.borderRadius = '3px';
+      settingsButton.style.backgroundColor = '#1976d2';
+      settingsButton.style.color = '#fff';
+      settingsButton.style.cursor = 'pointer';
+      settingsButton.style.fontSize = '12px';
+      settingsButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openExtensionSettings();
+      });
+      message.appendChild(settingsButton);
+    }
+
+    message.style.display = 'block';
+  }
+
   // Function to generate a comment
-  function generateComment(mood, selectedLanguage) {
-    // Show loading indicator
+  function generateComment(mood, selectedLanguage, dropdownMenu) {
     const button = document.querySelector('.ai-comment-generator-btn');
     if (!button) return;
 
     const originalHTML = button.innerHTML;
-    button.innerHTML = '⏳ Generating...';
-    button.disabled = true;
+    clearGenerationMessage();
 
     // Get the video title
     const videoTitle = getVideoTitle();
@@ -445,6 +521,16 @@ function addGenerateButton() {
 
     chrome.storage.sync.get(defaultOptions, function(options) {
       try {
+        if (isMissingApiKey(options.apiKey)) {
+          showGenerationMessage('Add an API key in Settings before generating a comment.', {
+            showSettingsAction: true
+          });
+          button.innerHTML = originalHTML;
+          button.disabled = false;
+          return;
+        }
+        options.apiKey = options.apiKey.trim();
+
         // Apply optional language override from dropdown if provided
         if (selectedLanguage && selectedLanguage !== 'default') {
           options.language = selectedLanguage;
@@ -463,22 +549,23 @@ function addGenerateButton() {
           options.temperature = 0.5;
         }
 
+        const basePrompt = options.prompt && options.prompt.trim()
+          ? options.prompt
+          : defaultOptions.prompt;
+
         // Build mood instruction if provided (skip for neutral)
         const moodInstruction = mood && mood !== 'neutral'
           ? ` Write the comment in a ${mood} tone.`
           : '';
 
-        // Add video title and mood to the prompt
-        if (options.prompt) {
-          options.prompt = `${options.prompt} Video title: "${videoTitle}".${moodInstruction}`;
+        options.prompt = `${basePrompt} Video title: "${videoTitle}".${moodInstruction}`;
+
+        if (dropdownMenu) {
+          dropdownMenu.style.display = 'none';
         }
 
-        if (!options.apiKey) {
-          alert('Please add an API key in the extension settings');
-          button.innerHTML = originalHTML;
-          button.disabled = false;
-          return;
-        }
+        button.innerHTML = '⏳ Generating...';
+        button.disabled = true;
 
         // Send request to generate a comment
         chrome.runtime.sendMessage(

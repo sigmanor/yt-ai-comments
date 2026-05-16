@@ -24,6 +24,8 @@ const defaultOptions = {
   prompt: '**Write a sincere and natural-sounding positive comment for a YouTube video. Use at least 10 words. Vary the structure and avoid overused phrases. Try to refer to something that could realistically appear in the video based on its title.**\n\n**Always end the comment with two new lines followed by this text (in English): (Created by YouTube AI Comments Generator)**'
 };
 
+const missingApiKeyMessage = 'Add an API key before generating comments. You can still save settings without one.';
+
 // Get default model based on provider
 function getDefaultModel(provider) {
   if (provider === 'openai') {
@@ -56,6 +58,25 @@ function normalizeTemperature(value) {
   }
 
   return temperature;
+}
+
+function isMissingApiKey(apiKey) {
+  return !apiKey || apiKey.trim() === '';
+}
+
+function updateApiKeyWarning(apiKey) {
+  const apiKeyInput = document.getElementById('api-key');
+  const warning = document.getElementById('api-key-warning');
+  const shouldWarn = isMissingApiKey(apiKey);
+
+  if (apiKeyInput) {
+    apiKeyInput.classList.toggle('settings-field-warning', shouldWarn);
+  }
+
+  if (warning) {
+    warning.textContent = shouldWarn ? missingApiKeyMessage : '';
+    warning.classList.toggle('is-visible', shouldWarn);
+  }
 }
 
 // Simple function to save settings to chrome.storage.sync
@@ -221,6 +242,7 @@ async function loadOptions() {
       const apiKeyValue = options.apiKey || '';
       console.log('Setting API key (length):', apiKeyValue.length);
       apiKeyInput.value = apiKeyValue;
+      updateApiKeyWarning(apiKeyValue);
     }
 
     // Set model with default if empty
@@ -324,10 +346,14 @@ async function saveOptions() {
     // Theme is always dark
     console.log('Using dark theme');
 
+    const apiKeyInput = document.getElementById('api-key');
+    const apiKey = apiKeyInput ? apiKeyInput.value : '';
+    updateApiKeyWarning(apiKey);
+
     const options = {
       language: document.getElementById('language').value,
       provider: providerValue,
-      apiKey: document.getElementById('api-key').value,
+      apiKey: apiKey,
       model: model,
       maxTokens: maxTokens,
       temperature: temperature,
@@ -384,6 +410,7 @@ async function resetOptions() {
     // Reset API key
     if (document.getElementById('api-key')) {
       document.getElementById('api-key').value = '';
+      updateApiKeyWarning('');
     }
 
     // Reset model
@@ -482,6 +509,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (this.value === '') {
           this.value = defaultOptions.maxTokens;
         }
+      });
+    }
+
+    const apiKeyInput = document.getElementById('api-key');
+    if (apiKeyInput) {
+      apiKeyInput.addEventListener('input', function() {
+        updateApiKeyWarning(this.value);
       });
     }
 
