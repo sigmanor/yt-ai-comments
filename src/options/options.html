@@ -134,6 +134,95 @@
     [data-theme="dark"] #reset-btn:hover {
       background-color: #666 !important;
     }
+
+    /* Reset confirmation modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .modal-backdrop[hidden] {
+      display: none;
+    }
+
+    .modal-card {
+      background: var(--bg-color, #2a2a2a);
+      color: var(--text-color, #eee);
+      border: 1px solid var(--border-color, #444);
+      border-radius: 8px;
+      padding: 20px 24px;
+      max-width: 420px;
+      width: calc(100% - 40px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-card h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .modal-card p {
+      margin: 0 0 20px;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .modal-actions button {
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+
+    #reset-confirm-cancel {
+      background: transparent !important;
+      color: var(--text-color, #eee) !important;
+      border: 1px solid var(--border-color, #666) !important;
+    }
+
+    #reset-confirm-cancel:hover {
+      background: rgba(255, 255, 255, 0.06) !important;
+    }
+
+    #reset-confirm-ok {
+      background: #d32f2f !important;
+      color: #fff !important;
+      border: 1px solid #d32f2f !important;
+    }
+
+    #reset-confirm-ok:hover {
+      background: #b71c1c !important;
+      border-color: #b71c1c !important;
+    }
+
+    /* Inline reset button (next to the Prompt label) */
+    .inline-reset-btn {
+      background: transparent !important;
+      color: var(--text-color, #ccc) !important;
+      border: 1px solid var(--border-color, #555) !important;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      opacity: 0.85;
+    }
+
+    .inline-reset-btn:hover {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.06) !important;
+    }
   </style>
 </head>
 
@@ -199,7 +288,10 @@
     </div>
 
     <div class="option-group">
-      <label for="prompt">Prompt:</label>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <label for="prompt" style="margin: 0;">Prompt:</label>
+        <button type="button" id="reset-prompt-btn" class="inline-reset-btn" title="Restore the default prompt">↻ Reset prompt</button>
+      </div>
       <textarea id="prompt" rows="5" placeholder="Write a prompt for comment generation"
         style="width: 100%; box-sizing: border-box;">Write a positive comment to support the YouTube video creator. The comment should be friendly, sincere, and encouraging. No more than 2-3 sentences.</textarea>
     </div>
@@ -226,6 +318,17 @@
   </div>
   <div id="about-button" title="About YouTube AI Comments Generator">
     <img src="../icons/help.png" alt="About">
+  </div>
+
+  <div id="reset-confirm-modal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reset-confirm-title">
+      <h3 id="reset-confirm-title">Reset settings?</h3>
+      <p>This will reset language, max tokens, variants, temperature, and the prompt to their defaults. Your API key, provider, and model will be kept.</p>
+      <div class="modal-actions">
+        <button id="reset-confirm-cancel" type="button">Cancel</button>
+        <button id="reset-confirm-ok" type="button">Reset</button>
+      </div>
+    </div>
   </div>
 
   <script src="options.js"></script>

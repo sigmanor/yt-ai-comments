@@ -426,6 +426,46 @@ async function saveOptions() {
   }
 }
 
+// Custom confirmation dialog for the Reset button.
+// Resolves to true if the user confirms, false otherwise.
+function showResetConfirm() {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('reset-confirm-modal');
+    const okBtn = document.getElementById('reset-confirm-ok');
+    const cancelBtn = document.getElementById('reset-confirm-cancel');
+
+    if (!modal || !okBtn || !cancelBtn) {
+      resolve(window.confirm('Reset settings? Your API key, provider, and model will be kept.'));
+      return;
+    }
+
+    const cleanup = (result) => {
+      modal.hidden = true;
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+      document.removeEventListener('keydown', onKey);
+      resolve(result);
+    };
+
+    const onOk = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    const onBackdrop = (e) => { if (e.target === modal) cleanup(false); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') cleanup(false);
+      else if (e.key === 'Enter') cleanup(true);
+    };
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+    document.addEventListener('keydown', onKey);
+
+    modal.hidden = false;
+    cancelBtn.focus();
+  });
+}
+
 // Reset settings to default values
 async function resetOptions() {
   try {
@@ -436,21 +476,7 @@ async function resetOptions() {
       document.getElementById('language').value = defaultOptions.language;
     }
 
-    // Reset provider
-    if (document.getElementById('provider')) {
-      document.getElementById('provider').value = defaultOptions.provider;
-    }
-
-    // Reset API key
-    if (document.getElementById('api-key')) {
-      document.getElementById('api-key').value = '';
-      updateApiKeyWarning('');
-    }
-
-    // Reset model
-    if (document.getElementById('model')) {
-      document.getElementById('model').value = getDefaultModel(defaultOptions.provider);
-    }
+    // API key, provider, and model are intentionally preserved on reset
 
     // Reset max tokens
     if (document.getElementById('max-tokens')) {
@@ -588,7 +614,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (resetButton) {
       resetButton.addEventListener('click', async function() {
         console.log('Reset button clicked');
-        await resetOptions();
+        const confirmed = await showResetConfirm();
+        if (confirmed) {
+          await resetOptions();
+        }
+      });
+    }
+
+    const resetPromptButton = document.getElementById('reset-prompt-btn');
+    if (resetPromptButton) {
+      resetPromptButton.addEventListener('click', function() {
+        const promptInput = document.getElementById('prompt');
+        if (!promptInput) return;
+        promptInput.value = defaultOptions.prompt;
+        const status = document.getElementById('status');
+        if (status) {
+          status.textContent = 'Prompt reset to default. Click Save to apply.';
+          setTimeout(function() {
+            if (status.textContent === 'Prompt reset to default. Click Save to apply.') {
+              status.textContent = '';
+            }
+          }, 3000);
+        }
       });
     }
 
