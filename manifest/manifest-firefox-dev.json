@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "YouTube AI Comments Generator",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "Generates YouTube comments with AI to support creators",
   "browser_specific_settings": {
     "gecko": {
