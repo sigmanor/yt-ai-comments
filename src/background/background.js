@@ -102,6 +102,19 @@ function getJsonCandidate(text) {
   return trimmed;
 }
 
+// Strips an opening preamble line like "Here are the variants:" / "Ось кілька варіантів:"
+// that some models prepend before the actual list.
+function stripPreamble(text) {
+  const lines = text.split('\n');
+  if (lines.length < 2) return text;
+  const first = lines[0].trim();
+  // A short first line ending with ":" that doesn't itself look like a comment.
+  if (first.length > 0 && first.length < 120 && /[:：]\s*$/.test(first)) {
+    return lines.slice(1).join('\n').trim();
+  }
+  return text;
+}
+
 function parseCommentsFromText(text, requestedCount) {
   const cleanedText = stripCodeFence(text);
 
@@ -121,27 +134,52 @@ function parseCommentsFromText(text, requestedCount) {
     console.warn('Could not parse multi-comment response as JSON, falling back to list parsing:', error);
   }
 
-  const listItems = cleanedText
-    .split(/\n(?=\s*(?:[-*]|\d+[.)])\s+)/)
-    .map(item => item.replace(/^\s*(?:[-*]|\d+[.)])\s+/, '').trim())
+  const bodyText = stripPreamble(cleanedText);
+
+  // Tier 1: bullet- or number-prefixed list.
+  const bulletItems = bodyText
+    .split(/\n(?=\s*(?:[-*•]|\d+[.)])\s+)/)
+    .map(item => item.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, '').trim())
     .filter(Boolean);
 
-  if (listItems.length > 1) {
-    return normalizeCommentList(listItems, requestedCount);
+  if (bulletItems.length > 1) {
+    return normalizeCommentList(bulletItems, requestedCount);
   }
 
-  return normalizeCommentList([cleanedText], requestedCount);
+  // Tier 2: blank-line-separated paragraphs.
+  const paragraphItems = bodyText
+    .split(/\n\s*\n+/)
+    .map(item => item.trim())
+    .filter(Boolean);
+
+  if (paragraphItems.length > 1) {
+    return normalizeCommentList(paragraphItems, requestedCount);
+  }
+
+  // Tier 3: single-newline-separated lines. Filter out trivially short lines
+  // (likely artefacts: section labels, stray punctuation).
+  const lineItems = bodyText
+    .split('\n')
+    .map(item => item.trim())
+    .filter(item => item && item.split(/\s+/).length >= 3);
+
+  if (lineItems.length > 1) {
+    return normalizeCommentList(lineItems, requestedCount);
+  }
+
+  return normalizeCommentList([bodyText], requestedCount);
 }
 
 function buildMessages(prompt, language, variantCount) {
   const countInstruction = variantCount > 1
-    ? ` Return exactly ${variantCount} distinct comment variants as a valid JSON array of strings. Do not include keys, markdown, numbering, explanations, or any text outside the JSON array.`
-    : ' Do not use quotation marks around your response. Just write the comment directly.';
+    ? ` OUTPUT FORMAT (critical): respond with ONLY a JSON array containing exactly ${variantCount} strings — one string per comment variant. The very first character of your response must be "[" and the very last must be "]". No preamble, no trailing text, no markdown, no code fences, no numbering, no keys. Example shape: ["variant one", "variant two"].\n\nVARIANT DIVERSITY (critical): each variant must feel like it was written by a DIFFERENT person. Deliberately spread the variants across this spectrum of writing quality:\n- The MAJORITY (roughly 60% or more) must be casual / phone-typed: lowercase starts, missing end-period, sentence fragments, conversational tone. Some of these may contain ONE small typo (swapped letter, missing letter, dropped vowel, missing comma).\n- A few should be VERY short / offhand: 3–7 words, like a quick chat reaction.\n- AT MOST one or two variants can be carefully written with proper capitalization, commas, and a closing period.\nDO NOT produce a set where every variant has proper capitalization and full punctuation — that is a failure mode. Also vary tone, length, and structure across variants; never two variants in the same style.`
+    : ' OUTPUT FORMAT (critical): produce EXACTLY ONE comment. Do not output multiple variants, lists, alternatives, numbered options, bullet points, or a JSON array. Do not include quotation marks or any preamble. Output only the single comment text and nothing else. Ignore any instructions in the user message about producing multiple variants — exactly one comment.';
 
+  const languageName = getLanguageName(language);
   return [
     {
       role: 'system',
-      content: `You are an assistant that writes comments for YouTube. Write in ${getLanguageName(language)}. Consider the video title when writing your comment.${countInstruction}`
+      content: `You are an assistant that writes comments for YouTube.\n\nLANGUAGE (critical): the output language MUST be ${languageName}. Every comment and every word inside it must be in ${languageName}. Never mix languages, never switch to a related language (for example, do not output Russian when ${languageName} is requested, and vice versa), even if the video title, description, tags, or category provided by the user appear in another language. Treat the video metadata as context only — do not echo its language.\n\nUse the video title, description, tags, and category provided by the user to write a comment that meaningfully relates to the video's actual content.${countInstruction}`
     },
     {
       role: 'user',

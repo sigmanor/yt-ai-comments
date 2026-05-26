@@ -432,6 +432,27 @@ function addGenerateButton() {
     return 'Unknown Video Title';
   }
 
+  // Collects extra grounding context (description, tags, category) for the LLM.
+  // Missing fields come back as empty strings so the prompt builder can skip them.
+  function getVideoContext() {
+    const metaContent = (sel) => document.querySelector(sel)?.getAttribute('content')?.trim() || '';
+
+    // Full description text lives in the DOM even when the "Show more" expander
+    // is collapsed (YouTube only CSS-clips it). textContent returns the full string.
+    const descEl =
+      document.querySelector('ytd-watch-metadata #description-inline-expander') ||
+      document.querySelector('ytd-text-inline-expander #attributed-snippet-text') ||
+      document.querySelector('#description.ytd-watch-metadata');
+    const description = (descEl?.textContent || '').trim() || metaContent('meta[name="description"]');
+
+    return {
+      title: getVideoTitle(),
+      description,
+      tags: metaContent('meta[name="keywords"]'),
+      category: metaContent('meta[itemprop="genre"]'),
+    };
+  }
+
   function detectYouTubeDarkTheme() {
     return document.documentElement.getAttribute('dark') !== null ||
       document.body.classList.contains('dark') ||
@@ -554,7 +575,7 @@ function addGenerateButton() {
     }
   }
 
-  function showCommentVariantsModal(comments) {
+  function showCommentVariantsModal(comments, onRegenerate) {
     removeCommentVariantsModal();
 
     const isDarkTheme = detectYouTubeDarkTheme();
@@ -596,6 +617,45 @@ function addGenerateButton() {
     title.textContent = 'Choose a comment';
     title.style.fontSize = '16px';
     title.style.fontWeight = '600';
+
+    const headerActions = document.createElement('div');
+    headerActions.style.display = 'flex';
+    headerActions.style.alignItems = 'center';
+    headerActions.style.gap = '8px';
+
+    let regenerateButton = null;
+    if (typeof onRegenerate === 'function') {
+      regenerateButton = document.createElement('button');
+      regenerateButton.type = 'button';
+      regenerateButton.setAttribute('aria-label', 'Regenerate comments');
+      regenerateButton.title = 'Regenerate comments';
+      regenerateButton.style.display = 'inline-flex';
+      regenerateButton.style.alignItems = 'center';
+      regenerateButton.style.gap = '6px';
+      regenerateButton.style.padding = '6px 12px';
+      regenerateButton.style.border = isDarkTheme ? '1px solid #454545' : '1px solid #dddddd';
+      regenerateButton.style.borderRadius = '18px';
+      regenerateButton.style.backgroundColor = isDarkTheme ? '#2b2b2b' : '#f8f8f8';
+      regenerateButton.style.color = isDarkTheme ? '#ffffff' : '#0f0f0f';
+      regenerateButton.style.cursor = 'pointer';
+      regenerateButton.style.font = 'inherit';
+      regenerateButton.style.fontSize = '13px';
+      regenerateButton.innerHTML = '<span style="font-size:14px;line-height:1;">↻</span><span>Regenerate</span>';
+      regenerateButton.addEventListener('mouseenter', () => {
+        regenerateButton.style.backgroundColor = isDarkTheme ? '#3a3a3a' : '#ececec';
+      });
+      regenerateButton.addEventListener('mouseleave', () => {
+        regenerateButton.style.backgroundColor = isDarkTheme ? '#2b2b2b' : '#f8f8f8';
+      });
+      regenerateButton.addEventListener('click', () => {
+        removeCommentVariantsModal();
+        try {
+          onRegenerate();
+        } catch (error) {
+          console.error('Regenerate callback failed:', error);
+        }
+      });
+    }
 
     const closeButton = document.createElement('button');
     closeButton.type = 'button';
@@ -673,7 +733,11 @@ function addGenerateButton() {
     });
 
     header.appendChild(title);
-    header.appendChild(closeButton);
+    if (regenerateButton) {
+      headerActions.appendChild(regenerateButton);
+    }
+    headerActions.appendChild(closeButton);
+    header.appendChild(headerActions);
     modal.appendChild(header);
     modal.appendChild(list);
     backdrop.appendChild(modal);
@@ -703,8 +767,8 @@ function addGenerateButton() {
     const originalHTML = button.innerHTML;
     clearGenerationMessage();
 
-    // Get the video title
-    const videoTitle = getVideoTitle();
+    // Collect grounding context (title + description + tags + category)
+    const videoContext = getVideoContext();
 
     // Get default language based on browser settings
     function getDefaultLanguage() {
@@ -722,7 +786,7 @@ function addGenerateButton() {
       maxTokens: 2000,
       variantCount: 1,
       temperature: 0.5,
-      prompt: '**Write a sincere and natural-sounding positive comment for a YouTube video. Use at least 10 words. Vary the structure and avoid overused phrases. Try to refer to something that could realistically appear in the video based on its title.**\n\n**Always end the comment with two new lines followed by this text (in English): (Created by YouTube AI Comments Generator)**'
+      prompt: '**Write a YouTube comment that sounds like a real viewer reacting to the video — react to something specific from the title, description, or tags, not generic praise.**\n\n**CRITICAL — match how people actually write on YouTube:** real comments are NOT polished essays. The majority are quick phone-typed reactions — lowercase starts, missing periods, sentence fragments, conversational tone, sometimes a small typo (a swapped letter, a missing letter, a dropped vowel, a missing comma). Treat this casual / sloppy style as the DEFAULT. Polished, fully-grammatical writing is the exception, not the rule. If a comment reads like a textbook sentence, it is wrong.\n\nStyle choices to pick per comment:\n- **Tone:** enthusiastic, surprised, curious, thoughtful, mildly critical, nostalgic, or sarcastic-but-friendly.\n- **Length:** anywhere from a 3-word reaction to ~25 words. Short offhand reactions are great.\n- **Structure:** a pure reaction, a mention of a specific detail from the video, or close with a short question.\n- **Writing quality:** most of the time casual / phone-typed (lowercase ok, no period at the end is fine, fragments are fine, one tiny typo is fine). Occasionally polished. Never robotic, never essay-style.\n- **Endings:** period, exclamation mark, or no end punctuation — whatever matches the conventions of the target language and feels natural for a quick comment.\n\n**Avoid:**\n- Bot-sounding phrases like "Thanks for the informative content", "Great educational video", "Subscribed!", "Keep up the good work".\n- Hashtags, sign-offs, signatures.\n- Emojis (only if one truly fits a casual variant).\n- Inventing facts that are not implied by the title, description, or tags.'
     };
 
     // Function to get default model based on provider
@@ -778,7 +842,12 @@ function addGenerateButton() {
           ? ` Write the comment in a ${mood} tone.`
           : '';
 
-        options.prompt = `${basePrompt} Video title: "${videoTitle}".${moodInstruction}`;
+        const contextLines = [`Video title: "${videoContext.title}".`];
+        if (videoContext.description) contextLines.push(`Description: ${videoContext.description}`);
+        if (videoContext.tags) contextLines.push(`Tags: ${videoContext.tags}`);
+        if (videoContext.category) contextLines.push(`Category: ${videoContext.category}`);
+
+        options.prompt = `${basePrompt}\n\n${contextLines.join('\n')}${moodInstruction}`;
 
         if (dropdownMenu) {
           dropdownMenu.style.display = 'none';
@@ -805,7 +874,9 @@ function addGenerateButton() {
                 : [response.comment].filter(Boolean);
 
               if (options.variantCount > 1 && comments.length > 0) {
-                showCommentVariantsModal(comments);
+                showCommentVariantsModal(comments, () => {
+                  generateComment(mood, selectedLanguage, dropdownMenu);
+                });
               } else if (comments.length > 0) {
                 insertCommentIntoInput(comments[0]);
               } else {
