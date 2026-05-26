@@ -1,3 +1,11 @@
+# [1.10.0](https://github.com/Sigmanor/yt-ai-comments/compare/v1.9.0...v1.10.0) (2026-05-26)
+
+
+### Features
+
+* **comments:** improve LLM grounding, prompt quality, and variant flow ([eb9d9a6](https://github.com/Sigmanor/yt-ai-comments/commit/eb9d9a652db83e839e597184b97d4fe79f805fa2))
+* **settings:** preserve auth on reset, add confirm dialog, add prompt-only reset ([113c84f](https://github.com/Sigmanor/yt-ai-comments/commit/113c84f7bb1102620dd938eeba97017eb995a445))
+
 # [1.9.0](https://github.com/Sigmanor/yt-ai-comments/compare/v1.8.0...v1.9.0) (2026-05-16)
 
 
